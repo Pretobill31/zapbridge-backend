@@ -7,11 +7,11 @@ const PORT = process.env.PORT || 3000;
 
 app.get("/generate-qr", async (req, res) => {
   try {
-    const { state, saveCreds } = await useMultiFileAuthState("sessions");
+    const { state, saveCreds } = await useMultiFileAuthState("./sessions");
 
     const sock = makeWASocket({
       auth: state,
-      printQRInTerminal: false,
+      printQRInTerminal: true,
     });
 
     sock.ev.on("connection.update", async (update) => {
@@ -24,35 +24,11 @@ app.get("/generate-qr", async (req, res) => {
 
     sock.ev.on("creds.update", saveCreds);
   } catch (err) {
-    console.error("Erro:", err);
+    console.error("Erro ao gerar QR Code:", err);
     res.status(500).json({ error: "Erro ao gerar QR Code" });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});    }
-  });
-
-  sock.ev.on("creds.update", saveCreds);
-};
-
-// Rota para gerar QR
-app.get("/generate-qr", async (req, res) => {
-  try {
-    if (!qrCodeData) {
-      return res.json({ message: "Aguardando geração do QR Code..." });
-    }
-    res.json({ qrCode: qrCodeData });
-  } catch (err) {
-    console.error("Erro ao gerar QR Code:", err);
-    res.status(500).json({ error: "Erro interno no servidor" });
-  }
-});
-
-// Inicializa WhatsApp assim que o servidor subir
-initWhatsApp();
-
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
