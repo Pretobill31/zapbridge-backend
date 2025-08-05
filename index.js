@@ -5,12 +5,12 @@ import QRCode from "qrcode";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ Nova rota para confirmar que o backend está ativo
+// Rota inicial (não fica em branco)
 app.get("/", (req, res) => {
-  res.send("<h2>🚀 Servidor ZapBridge está rodando! Use /generate-qr para gerar seu QR Code.</h2>");
+  res.send("<h1>ZapBridge Backend está rodando 🚀</h1><p>Acesse <a href='/generate-qr'>/generate-qr</a> para gerar um QR Code.</p>");
 });
 
-// Rota de gerar QR Code
+// Rota para gerar QR Code
 app.get("/generate-qr", async (req, res) => {
   try {
     const { state, saveCreds } = await useMultiFileAuthState("sessions");
@@ -20,21 +20,23 @@ app.get("/generate-qr", async (req, res) => {
       printQRInTerminal: false,
     });
 
-    let qrSent = false;
-
     sock.ev.on("connection.update", async (update) => {
       const { qr } = update;
-      if (qr && !qrSent) {
-        qrSent = true;
+      if (qr) {
         const qrImage = await QRCode.toDataURL(qr);
-        return res.json({ qrCode: qrImage });
+        return res.send(`<h1>Escaneie o QR Code:</h1><img src="${qrImage}" />`);
       }
     });
 
     sock.ev.on("creds.update", saveCreds);
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao gerar QR Code", details: err.message });
+  }
+});
 
-    // Caso não gere QR em tempo hábil
-    setTimeout(() => {
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});    setTimeout(() => {
       if (!qrSent) res.status(500).json({ error: "Timeout ao gerar QR Code" });
     }, 15000);
 
