@@ -1,40 +1,37 @@
 import express from "express";
 import makeWASocket, { useMultiFileAuthState } from "@adiwajshing/baileys";
 import QRCode from "qrcode";
-import Pino from "pino";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Inicializa o socket do WhatsApp
-let sock;
-let qrCodeData = null;
+app.get("/generate-qr", async (req, res) => {
+  try {
+    const { state, saveCreds } = await useMultiFileAuthState("sessions");
 
-const initWhatsApp = async () => {
-  const { state, saveCreds } = await useMultiFileAuthState("sessions");
+    const sock = makeWASocket({
+      auth: state,
+      printQRInTerminal: false,
+    });
 
-  sock = makeWASocket({
-    logger: Pino({ level: "silent" }),
-    auth: state,
-    printQRInTerminal: true,
-  });
+    sock.ev.on("connection.update", async (update) => {
+      const { qr } = update;
+      if (qr) {
+        const qrImage = await QRCode.toDataURL(qr);
+        res.json({ qrCode: qrImage });
+      }
+    });
 
-  sock.ev.on("connection.update", async (update) => {
-    const { qr, connection } = update;
+    sock.ev.on("creds.update", saveCreds);
+  } catch (err) {
+    console.error("Erro:", err);
+    res.status(500).json({ error: "Erro ao gerar QR Code" });
+  }
+});
 
-    if (qr) {
-      qrCodeData = await QRCode.toDataURL(qr);
-      console.log("Novo QR Code gerado!");
-    }
-
-    if (connection === "open") {
-      console.log("✅ WhatsApp conectado com sucesso!");
-    }
-
-    if (connection === "close") {
-      console.log("⚠️ Conexão perdida. Tentando reconectar...");
-      initWhatsApp();
-    }
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});    }
   });
 
   sock.ev.on("creds.update", saveCreds);
