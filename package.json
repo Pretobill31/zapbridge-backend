@@ -1,7 +1,6 @@
 {
   "name": "zapbridge-backend",
   "version": "1.0.0",
-  "description": "Backend do ZapBridge para conexão do WhatsApp via Baileys",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -10,7 +9,7 @@
   "dependencies": {
     "express": "^4.18.2",
     "qrcode": "^1.5.3",
-    "@whiskeysockets/baileys": "^6.5.0"
+    "@adiwajshing/baileys": "^6.5.0"
   },
   "engines": {
     "node": "18.x"
