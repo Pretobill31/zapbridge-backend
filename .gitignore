@@ -1,0 +1,4 @@
+# Ignorar sessões do Baileys (não subir para o GitHub)
+sessions/
+node_modules/
+.env
