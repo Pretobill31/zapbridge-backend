@@ -1,15 +1,37 @@
-{
-  "name": "zapbridge-backend",
-  "version": "1.0.0",
-  "description": "Backend do ZapBridge para conexão com WhatsApp via QR Code",
-  "main": "servidor.js",
-  "type": "module",
-  "scripts": {
-    "start": "node servidor.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "@adiwajshing/baileys": "^6.6.0",
-    "qrcode": "^1.5.3"
+import express from "express";
+import makeWASocket, { useMultiFileAuthState } from "@adiwajshing/baileys";
+import QRCode from "qrcode";
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get("/generate-qr", async (req, res) => {
+  try {
+    const { state, saveCreds } = await useMultiFileAuthState("sessions");
+
+    const sock = makeWASocket({
+      auth: state,
+      printQRInTerminal: false,
+    });
+
+    let qrSent = false;
+
+    sock.ev.on("connection.update", async (update) => {
+      const { qr } = update;
+      if (qr && !qrSent) {
+        qrSent = true; // evita múltiplas respostas
+        const qrImage = await QRCode.toDataURL(qr);
+        res.json({ qrCode: qrImage });
+      }
+    });
+
+    sock.ev.on("creds.update", saveCreds);
+  } catch (err) {
+    console.error("Erro ao gerar QR:", err);
+    res.status(500).json({ error: "Erro ao gerar QR Code" });
   }
-}
+});
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
